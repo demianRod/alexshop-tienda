@@ -1,5 +1,5 @@
 import React from 'react'
-import { ShoppingCart, Store, User } from 'lucide-react'
+import { Store, LogIn } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 const Header = () => {
@@ -18,27 +18,18 @@ const Header = () => {
             </div>
           </Link>
           
-          {/* Navegación */}
-          <div className="flex items-center gap-6">
-            {/* Enlace a admin */}
-            <Link 
-              to="/admin" 
-              className="hidden md:flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition-colors text-sm font-medium"
-            >
-              <User size={18} />
-              <span>Iniciar sesión</span>
-            </Link>
-          </div>
-        </div>
-        
-        {/* Enlace a admin móvil */}
-        <div className="mt-4 md:hidden">
+          
           <Link 
             to="/admin" 
-            className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-800 px-4 py-2 rounded-lg transition-colors text-sm font-medium w-full"
+            className="p-3 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-lg transition-colors group relative"
+            aria-label="Acceso vendedor"
+            title="Acceso vendedor / Admin"
           >
-            <User size={18} />
-            <span>Iniciar sesión</span>
+            <LogIn size={20} />
+            {/* Tooltip en hover (solo desktop) */}
+            <span className="hidden md:block absolute top-full right-0 mt-2 px-3 py-1 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+              Acceso vendedor
+            </span>
           </Link>
         </div>
       </div>
