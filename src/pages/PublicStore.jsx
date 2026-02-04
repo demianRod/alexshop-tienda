@@ -143,16 +143,16 @@ const PublicStore = () => {
                     
                     {/* Badges */}
                     <div className="absolute top-3 left-3 flex flex-col gap-1">
-                      {product.stock === 0 && (
+                      {/* {product.stock === 0 && (
                         <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                           AGOTADO
                         </span>
-                      )}
-                      {product.stock > 0 && product.stock <= 5 && (
+                      )} */}
+                      {/* {product.stock > 0 && product.stock <= 5 && (
                         <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold">
                           ÚLTIMAS {product.stock}
                         </span>
-                      )}
+                      )} */}
                       <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">
                         {product.category || 'General'}
                       </span>
@@ -175,9 +175,9 @@ const PublicStore = () => {
                         <span className="text-blue-600 font-bold text-xl">
                           ${product.price.toLocaleString()}
                         </span>
-                        <span className={`text-sm font-medium ${product.stock > 5 ? 'text-green-600' : 'text-yellow-600'}`}>
+                        {/* <span className={`text-sm font-medium ${product.stock > 5 ? 'text-green-600' : 'text-yellow-600'}`}>
                           {product.stock > 5 ? `${product.stock} disponibles` : '¡Pocas unidades!'}
-                        </span>
+                        </span> */}
                       </div>
                       
                       {/* Botón de WhatsApp */}
