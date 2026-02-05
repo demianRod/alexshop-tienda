@@ -1,7 +1,7 @@
 import React from 'react'
 import { Store, LogIn } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import logo from '../assets/loge.jpg'
+import logo from '../assets/logo.jpg'
 import 'animate.css'
 
 const Header = () => {
@@ -11,10 +11,7 @@ const Header = () => {
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            {/* <div className="p-2 bg-blue-600 rounded-lg"> */}
               <img src={logo} alt="Logo AlexShop" className="w-12 h-12 rounded-full object-contain animate__animated animate__flip animate__infinite" />
-              {/* <Store className="text-white" size={28} /> */}
-            {/* </div> */}
             <div>
               <h1 className="text-2xl font-bold text-gray-800">AlexShop</h1>
               <p className="text-gray-600 text-sm hidden md:block">Tu tienda de confianza</p>
