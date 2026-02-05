@@ -3,6 +3,8 @@ import { Search, Package, ShoppingCart, MessageCircle, Phone } from 'lucide-reac
 import supabase from '../lib/supabase'
 import Header from '../components/Header'
 import { Link } from 'react-router-dom'
+import { FaWhatsapp } from 'react-icons/fa'
+
 
 const PublicStore = () => {
   const [products, setProducts] = useState([])
@@ -15,23 +17,24 @@ const PublicStore = () => {
 
   // Cargar productos
   const fetchProducts = async () => {
-    try {
-      setLoading(true)
-      const { data, error } = await supabase
-        .from('products')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
-      if (error) throw error
-      
-      setProducts(data || [])
-      setFilteredProducts(data || [])
-    } catch (error) {
-      console.error('Error:', error)
-    } finally {
-      setLoading(false)
-    }
+  try {
+    setLoading(true)
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .in('status', ['disponible', 'apartado']) // SOLO productos disponibles o apartados
+      .order('created_at', { ascending: false })
+    
+    if (error) throw error
+    
+    setProducts(data || [])
+    setFilteredProducts(data || [])
+  } catch (error) {
+    console.error('Error:', error)
+  } finally {
+    setLoading(false)
   }
+}
 
   useEffect(() => {
     fetchProducts()
@@ -142,17 +145,12 @@ const PublicStore = () => {
                     )}
                     
                     {/* Badges */}
-                    <div className="absolute top-3 left-3 flex flex-col gap-1">
-                      {/* {product.stock === 0 && (
-                        <span className="bg-red-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                          AGOTADO
+                    <div className="absolute top-3 left-3 flex flex-col gap-1"> 
+                       
+                        <span className={`bg-green-500 text-white px-3 py-1 rounded-full text-xs font-bold ${product.status === 'disponible' ? 'bg-green-500 text-white' : 'bg-yellow-500 text-gray-800'}`}>
+                        {product.status === 'disponible' ? 'DISPONIBLE' : 'APARTADO'}
                         </span>
-                      )} */}
-                      {/* {product.stock > 0 && product.stock <= 5 && (
-                        <span className="bg-yellow-500 text-white px-3 py-1 rounded-full text-xs font-bold">
-                          ÚLTIMAS {product.stock}
-                        </span>
-                      )} */}
+                
                       <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-xs font-bold">
                         {product.category || 'General'}
                       </span>
@@ -175,12 +173,13 @@ const PublicStore = () => {
                         <span className="text-blue-600 font-bold text-xl">
                           ${product.price.toLocaleString()}
                         </span>
-                        {/* <span className={`text-sm font-medium ${product.stock > 5 ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {product.stock > 5 ? `${product.stock} disponibles` : '¡Pocas unidades!'}
-                        </span> */}
+                         {/* <span className={`text-sm font-medium ${product.status === 'disponible' ? 'text-green-600' : 'text-yellow-600'}`}>
+                          {product.status === 'disponible' ? 'DISPONIBLE' : 'APARTADO'}
+                        </span>  */}
                       </div>
                       
                       {/* Botón de WhatsApp */}
+                                            {/* Botón de WhatsApp */}
                       <button
                         onClick={() => handleWhatsAppClick(product)}
                         disabled={product.stock === 0}
@@ -190,7 +189,7 @@ const PublicStore = () => {
                             : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
                         }`}
                       >
-                        <MessageCircle size={20} />
+                        <FaWhatsapp size={20} />
                         <span>ME INTERESA</span>
                       </button>
                     </div>

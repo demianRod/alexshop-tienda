@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { Navigate } from 'react-router-dom'
 import supabase from '../lib/supabase'
 import { 
   LogOut, Package, Plus, Edit, Trash2, Search, 
-  Filter, Download, Upload, Eye, BarChart3 
+  Download, Eye, BarChart3, CheckCircle, Clock, DollarSign 
 } from 'lucide-react'
 import ProductForm from '../components/ProductForm'
 import Login from '../components/Login'
@@ -18,10 +17,12 @@ const AdminPanel = () => {
   const [loading, setLoading] = useState(true)
   const [stats, setStats] = useState({
     total: 0,
-    inStock: 0,
-    outOfStock: 0,
+    disponible: 0,
+    apartado: 0,
+    vendido: 0,
     totalValue: 0
   })
+  const [activeTab, setActiveTab] = useState('disponible') // 'disponible', 'apartado', 'vendido', 'todos'
 
   // Verificar sesión
   useEffect(() => {
@@ -53,7 +54,6 @@ const AdminPanel = () => {
       if (error) throw error
       
       setProducts(data || [])
-      setFilteredProducts(data || [])
       calculateStats(data || [])
     } catch (error) {
       console.error('Error:', error)
@@ -64,11 +64,30 @@ const AdminPanel = () => {
 
   const calculateStats = (productsList) => {
     const total = productsList.length
-    const inStock = productsList.filter(p => p.stock > 0).length
-    const outOfStock = productsList.filter(p => p.stock === 0).length
+    const disponible = productsList.filter(p => p.status === 'disponible').length
+    const apartado = productsList.filter(p => p.status === 'apartado').length
+    const vendido = productsList.filter(p => p.status === 'vendido').length
     const totalValue = productsList.reduce((sum, p) => sum + (p.price * p.stock), 0)
     
-    setStats({ total, inStock, outOfStock, totalValue })
+    setStats({ total, disponible, apartado, vendido, totalValue })
+    
+    // Filtrar según la pestaña activa
+    filterProductsByTab(productsList, activeTab)
+  }
+
+  const filterProductsByTab = (productsList, tab) => {
+    let filtered = productsList
+    
+    if (tab === 'disponible') {
+      filtered = productsList.filter(p => p.status === 'disponible')
+    } else if (tab === 'apartado') {
+      filtered = productsList.filter(p => p.status === 'apartado')
+    } else if (tab === 'vendido') {
+      filtered = productsList.filter(p => p.status === 'vendido')
+    }
+    // 'todos' muestra todos los productos
+    
+    setFilteredProducts(filtered)
   }
 
   useEffect(() => {
@@ -77,12 +96,35 @@ const AdminPanel = () => {
     }
   }, [user])
 
+  // Actualizar estado del producto
+  const updateProductStatus = async (id, newStatus) => {
+    try {
+      const { error } = await supabase
+        .from('products')
+        .update({ status: newStatus })
+        .eq('id', id)
+      
+      if (error) throw error
+      
+      alert(`✅ Producto marcado como ${newStatus}`)
+      fetchProducts()
+    } catch (error) {
+      alert('❌ Error actualizando estado: ' + error.message)
+    }
+  }
+
+  // Cambiar pestaña
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+    filterProductsByTab(products, tab)
+  }
+
   // Buscar productos
   useEffect(() => {
     const searchLower = searchTerm.toLowerCase().trim()
     
     if (!searchLower) {
-      setFilteredProducts(products)
+      filterProductsByTab(products, activeTab)
       return
     }
 
@@ -92,8 +134,9 @@ const AdminPanel = () => {
       product.category.toLowerCase().includes(searchLower)
     )
     
-    setFilteredProducts(filtered)
-  }, [searchTerm, products])
+    // Aplicar filtro de pestaña después de la búsqueda
+    filterProductsByTab(filtered, activeTab)
+  }, [searchTerm, products, activeTab])
 
   // Eliminar producto
   const handleDeleteProduct = async (id) => {
@@ -155,6 +198,15 @@ const AdminPanel = () => {
               </div>
               
               <button
+                onClick={() => window.open('/', '_blank')}
+                className="flex items-center gap-2 bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition-colors text-sm"
+                title="Ver tienda pública"
+              >
+                <Eye size={18} />
+                Ver tienda
+              </button>
+              
+              <button
                 onClick={handleLogout}
                 className="flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors text-sm"
                 title="Cerrar sesión"
@@ -169,7 +221,7 @@ const AdminPanel = () => {
 
       <main className="container mx-auto px-4 py-8">
         {/* Estadísticas */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex items-center justify-between">
               <div>
@@ -186,10 +238,10 @@ const AdminPanel = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm">Disponibles</p>
-                <p className="text-3xl font-bold text-green-600">{stats.inStock}</p>
+                <p className="text-3xl font-bold text-green-600">{stats.disponible}</p>
               </div>
               <div className="p-3 bg-green-100 rounded-lg">
-                <span className="text-green-600 font-bold">✓</span>
+                <CheckCircle className="text-green-600" size={24} />
               </div>
             </div>
           </div>
@@ -197,11 +249,23 @@ const AdminPanel = () => {
           <div className="bg-white rounded-xl shadow p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm">Agotados</p>
-                <p className="text-3xl font-bold text-red-600">{stats.outOfStock}</p>
+                <p className="text-gray-500 text-sm">Apartados</p>
+                <p className="text-3xl font-bold text-yellow-600">{stats.apartado}</p>
+              </div>
+              <div className="p-3 bg-yellow-100 rounded-lg">
+                <Clock className="text-yellow-600" size={24} />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-gray-500 text-sm">Vendidos</p>
+                <p className="text-3xl font-bold text-red-600">{stats.vendido}</p>
               </div>
               <div className="p-3 bg-red-100 rounded-lg">
-                <span className="text-red-600 font-bold">!</span>
+                <DollarSign className="text-red-600" size={24} />
               </div>
             </div>
           </div>
@@ -217,6 +281,50 @@ const AdminPanel = () => {
               </div>
             </div>
           </div>
+        </div>
+
+        {/* Pestañas de estado */}
+        <div className="flex flex-wrap gap-2 mb-6">
+          <button
+            onClick={() => handleTabChange('todos')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'todos' 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Todos ({stats.total})
+          </button>
+          <button
+            onClick={() => handleTabChange('disponible')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'disponible' 
+                ? 'bg-green-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Disponibles ({stats.disponible})
+          </button>
+          <button
+            onClick={() => handleTabChange('apartado')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'apartado' 
+                ? 'bg-yellow-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Apartados ({stats.apartado})
+          </button>
+          <button
+            onClick={() => handleTabChange('vendido')}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === 'vendido' 
+                ? 'bg-red-600 text-white' 
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+            }`}
+          >
+            Vendidos ({stats.vendido})
+          </button>
         </div>
 
         {/* Barra de acciones */}
@@ -235,7 +343,6 @@ const AdminPanel = () => {
           </div>
           
           <div className="flex gap-3">
-            
             <button
               onClick={() => {
                 setEditingProduct(null)
@@ -273,7 +380,11 @@ const AdminPanel = () => {
           <div className="bg-white rounded-xl shadow overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h2 className="text-xl font-bold text-gray-800">
-                Productos ({filteredProducts.length})
+                {activeTab === 'disponible' && '📦 Productos Disponibles'}
+                {activeTab === 'apartado' && '⏳ Productos Apartados'}
+                {activeTab === 'vendido' && '💰 Productos Vendidos'}
+                {activeTab === 'todos' && '📋 Todos los Productos'}
+                ({filteredProducts.length})
               </h2>
             </div>
             
@@ -289,9 +400,9 @@ const AdminPanel = () => {
                   No hay productos
                 </h3>
                 <p className="text-gray-500 mt-2">
-                  {searchTerm ? 'No se encontraron productos' : 'Comienza agregando tu primer producto'}
+                  {searchTerm ? 'No se encontraron productos' : `No hay productos ${activeTab === 'todos' ? '' : activeTab}`}
                 </p>
-                {!searchTerm && (
+                {!searchTerm && activeTab === 'disponible' && (
                   <button
                     onClick={() => setShowForm(true)}
                     className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
@@ -319,6 +430,9 @@ const AdminPanel = () => {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Estado
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cambiar Estado
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Acciones
@@ -370,14 +484,52 @@ const AdminPanel = () => {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            product.stock > 5 
+                            product.status === 'disponible' 
                               ? 'bg-green-100 text-green-800' 
-                              : product.stock === 0
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-yellow-100 text-yellow-800'
+                              : product.status === 'apartado'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-red-100 text-red-800'
                           }`}>
-                            {product.stock > 5 ? 'Disponible' : product.stock === 0 ? 'Agotado' : 'Pocas unidades'}
+                            {product.status === 'disponible' ? '🟢 Disponible' : 
+                             product.status === 'apartado' ? '🟡 Apartado' : '🔴 Vendido'}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="flex gap-1">
+                            <button
+                              onClick={() => updateProductStatus(product.id, 'disponible')}
+                              className={`px-2 py-1 text-xs rounded ${
+                                product.status === 'disponible' 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-green-100 text-green-800 hover:bg-green-200'
+                              }`}
+                              title="Marcar como disponible"
+                            >
+                              Disp
+                            </button>
+                            <button
+                              onClick={() => updateProductStatus(product.id, 'apartado')}
+                              className={`px-2 py-1 text-xs rounded ${
+                                product.status === 'apartado' 
+                                  ? 'bg-yellow-500 text-white' 
+                                  : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                              }`}
+                              title="Marcar como apartado"
+                            >
+                              Apart
+                            </button>
+                            <button
+                              onClick={() => updateProductStatus(product.id, 'vendido')}
+                              className={`px-2 py-1 text-xs rounded ${
+                                product.status === 'vendido' 
+                                  ? 'bg-red-500 text-white' 
+                                  : 'bg-red-100 text-red-800 hover:bg-red-200'
+                              }`}
+                              title="Marcar como vendido"
+                            >
+                              Vend
+                            </button>
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex gap-2">

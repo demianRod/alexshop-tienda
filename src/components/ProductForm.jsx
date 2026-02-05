@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Upload, X, Save, Package } from 'lucide-react'
+import { Upload, X, Save, Package, CheckCircle, Clock, DollarSign } from 'lucide-react'
 import supabase from '../lib/supabase'
 
 const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
@@ -9,6 +9,7 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
     price: '',
     category: '',
     stock: '',
+    status: 'disponible', // Nuevo campo
     image_url: ''
   })
   const [uploading, setUploading] = useState(false)
@@ -23,6 +24,7 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
         price: product.price || '',
         category: product.category || '',
         stock: product.stock || '',
+        status: product.status || 'disponible', // Cargar estado
         image_url: product.image_url || ''
       })
     }
@@ -71,7 +73,9 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
       const productData = {
         ...formData,
         price: parseFloat(formData.price),
-        stock: parseInt(formData.stock)
+        stock: parseInt(formData.stock),
+        // Si es nuevo producto, siempre empieza como 'disponible'
+        status: isEditing ? formData.status : 'disponible'
       }
 
       let result
@@ -83,10 +87,10 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
           .update(productData)
           .eq('id', product.id)
       } else {
-        // Crear nuevo producto
+        // Crear nuevo producto (siempre disponible)
         result = await supabase
           .from('products')
-          .insert([productData])
+          .insert([{ ...productData, status: 'disponible' }])
       }
 
       if (result.error) throw result.error
@@ -101,6 +105,7 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
           price: '',
           category: '',
           stock: '',
+          status: 'disponible',
           image_url: ''
         })
       }
@@ -112,6 +117,13 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
       setSaving(false)
     }
   }
+
+  // Estilos para los diferentes estados
+  const statusOptions = [
+    { value: 'disponible', label: '🟢 Disponible', icon: CheckCircle, color: 'bg-green-100 text-green-800 border-green-300' },
+    { value: 'apartado', label: '🟡 Apartado', icon: Clock, color: 'bg-yellow-100 text-yellow-800 border-yellow-300' },
+    { value: 'vendido', label: '🔴 Vendido', icon: DollarSign, color: 'bg-red-100 text-red-800 border-red-300' }
+  ]
 
   return (
     <div className="bg-white rounded-xl shadow-lg p-6 max-w-2xl mx-auto mb-8">
@@ -231,6 +243,79 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
             />
           </div>
 
+          {/* NUEVO: Estado del producto (solo en edición) */}
+          {isEditing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Estado del Producto
+              </label>
+              <div className="space-y-2">
+                {statusOptions.map((option) => {
+                  const Icon = option.icon
+                  return (
+                    <label
+                      key={option.value}
+                      className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-all border-2 ${
+                        formData.status === option.value
+                          ? option.color + ' border-opacity-100'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100'
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="status"
+                        value={option.value}
+                        checked={formData.status === option.value}
+                        onChange={handleChange}
+                        className="hidden"
+                      />
+                      <Icon size={18} />
+                      <span className="font-medium">{option.label}</span>
+                      <div className="ml-auto">
+                        <div className={`w-3 h-3 rounded-full ${
+                          formData.status === option.value 
+                            ? option.value === 'disponible' ? 'bg-green-500' 
+                            : option.value === 'apartado' ? 'bg-yellow-500' 
+                            : 'bg-red-500'
+                            : 'bg-gray-300'
+                        }`}></div>
+                      </div>
+                    </label>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {!isEditing && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Imagen del Producto
+              </label>
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  id="image-upload"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <label htmlFor="image-upload" className="cursor-pointer block">
+                  <Upload className="mx-auto text-gray-400 mb-3" size={32} />
+                  <span className="text-sm text-gray-600 font-medium">
+                    {uploading ? 'Subiendo...' : formData.image_url ? 'Cambiar imagen' : 'Subir imagen'}
+                  </span>
+                  <p className="text-xs text-gray-500 mt-1">
+                    PNG, JPG o WebP (max 5MB)
+                  </p>
+                </label>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Para edición, la imagen va aparte */}
+        {isEditing && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Imagen del Producto
@@ -238,12 +323,12 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors cursor-pointer">
               <input
                 type="file"
-                id="image-upload"
+                id="image-upload-edit"
                 accept="image/*"
                 onChange={handleImageUpload}
                 className="hidden"
               />
-              <label htmlFor="image-upload" className="cursor-pointer block">
+              <label htmlFor="image-upload-edit" className="cursor-pointer block">
                 <Upload className="mx-auto text-gray-400 mb-3" size={32} />
                 <span className="text-sm text-gray-600 font-medium">
                   {uploading ? 'Subiendo...' : formData.image_url ? 'Cambiar imagen' : 'Subir imagen'}
@@ -254,7 +339,7 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
               </label>
             </div>
           </div>
-        </div>
+        )}
 
         {formData.image_url && (
           <div className="bg-gray-50 p-4 rounded-lg">
@@ -276,6 +361,27 @@ const ProductForm = ({ onProductAdded, onCancel, product, isEditing }) => {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Información sobre estados */}
+        {isEditing && (
+          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-800 mb-2">💡 Información sobre estados:</h4>
+            <ul className="text-sm text-blue-700 space-y-1">
+              <li className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span><strong>Disponible:</strong> El producto está listo para venta</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <span><strong>Apartado:</strong> Alguien lo reservó pero no pagó completo</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <span><strong>Vendido:</strong> Producto ya vendido, no aparecerá en la tienda</span>
+              </li>
+            </ul>
           </div>
         )}
 
