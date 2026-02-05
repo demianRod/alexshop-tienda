@@ -173,18 +173,15 @@ const PublicStore = () => {
                         <span className="text-blue-600 font-bold text-xl">
                           ${product.price.toLocaleString()}
                         </span>
-                         {/* <span className={`text-sm font-medium ${product.status === 'disponible' ? 'text-green-600' : 'text-yellow-600'}`}>
-                          {product.status === 'disponible' ? 'DISPONIBLE' : 'APARTADO'}
-                        </span>  */}
                       </div>
                       
                       {/* Botón de WhatsApp */}
-                                            {/* Botón de WhatsApp */}
+
                       <button
                         onClick={() => handleWhatsAppClick(product)}
-                        disabled={product.stock === 0}
+                        disabled={product.status === 'apartado'}
                         className={`w-full py-3 rounded-xl font-semibold flex items-center justify-center gap-3 transition-all duration-300 ${
-                          product.stock === 0
+                          product.status === 'apartado'
                             ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
                             : 'bg-green-500 hover:bg-green-600 text-white shadow-md hover:shadow-lg'
                         }`}
